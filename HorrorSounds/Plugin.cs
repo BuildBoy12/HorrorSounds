@@ -1,41 +1,55 @@
-﻿using System;
-using System.Linq;
-using Exiled.API.Features;
-using UnityEngine;
+﻿// -----------------------------------------------------------------------
+// <copyright file="Plugin.cs" company="Kognity">
+// Copyright (c) Kognity. All rights reserved.
+// Licensed under the CC BY-SA 3.0 license.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace HorrorSounds
 {
-	public class HorrorSounds : Plugin<Config>
-	{
+    using System;
+    using Exiled.API.Features;
 
-		public static HorrorSounds HorrorSoundsRef { get; private set; }
-		public override string Name => nameof(HorrorSounds);
-		public override string Author => "Kognity";
-		public EventHandler Handler;
+    /// <summary>
+    /// The main plugin class.
+    /// </summary>
+    public class Plugin : Plugin<Config>
+    {
+        private EventHandlers eventHandlers;
 
-		public HorrorSounds()
-		{
-			HorrorSoundsRef = this;
-		}
+        /// <inheritdoc />
+        public override string Author => "Kognity";
 
-		public override void OnEnabled()
-		{
-			Log.Info("HorrorSounds Plugin Enabled!");
-			Log.Info("Thanks for installing my plugin <3 - Kognity");
-		
+        /// <inheritdoc />
+        public override string Name => "Horror Sounds";
 
-			Handler = new EventHandler(this);
-			Exiled.Events.Handlers.Server.RoundStarted += Handler.OnRoundStartEvent;
-			Exiled.Events.Handlers.Server.EndingRound += Handler.OnEndingRoundEvent;
-		}
+        /// <inheritdoc />
+        public override string Prefix => "HorrorSounds";
 
-		public override void OnDisabled()
-		{
-			Exiled.Events.Handlers.Server.RoundStarted -= Handler.OnRoundStartEvent;
-			Exiled.Events.Handlers.Server.EndingRound -= Handler.OnEndingRoundEvent;
-			Handler = null;
-		}
+        /// <inheritdoc />
+        public override Version RequiredExiledVersion { get; } = new(5, 2, 1);
 
-		public override void OnReloaded() { }
-	}
+        /// <inheritdoc />
+        public override Version Version { get; } = new(2, 0, 0);
+
+        /// <inheritdoc />
+        public override void OnEnabled()
+        {
+            eventHandlers = new EventHandlers(this);
+            Exiled.Events.Handlers.Server.RoundEnded += eventHandlers.OnRoundEnded;
+            Exiled.Events.Handlers.Server.RoundStarted += eventHandlers.OnRoundStarted;
+            Exiled.Events.Handlers.Server.WaitingForPlayers += eventHandlers.OnWaitingForPlayers;
+            base.OnEnabled();
+        }
+
+        /// <inheritdoc />
+        public override void OnDisabled()
+        {
+            Exiled.Events.Handlers.Server.RoundEnded -= eventHandlers.OnRoundEnded;
+            Exiled.Events.Handlers.Server.RoundStarted -= eventHandlers.OnRoundStarted;
+            Exiled.Events.Handlers.Server.WaitingForPlayers -= eventHandlers.OnWaitingForPlayers;
+            eventHandlers = null;
+            base.OnDisabled();
+        }
+    }
 }

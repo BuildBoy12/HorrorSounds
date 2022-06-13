@@ -1,43 +1,60 @@
-﻿using Exiled.API.Features;
-using Exiled.Events.EventArgs;
-using UnityEngine;
-using System;
-using MEC;
-using System.Collections.Generic;
+﻿// -----------------------------------------------------------------------
+// <copyright file="EventHandlers.cs" company="Kognity">
+// Copyright (c) Kognity. All rights reserved.
+// Licensed under the CC BY-SA 3.0 license.
+// </copyright>
+// -----------------------------------------------------------------------
 
 namespace HorrorSounds
 {
-	public class EventHandler
-	{
-		public HorrorSounds plugin;
-		public EventHandler(HorrorSounds plugin) => this.plugin = plugin;
-		Config Configs = HorrorSounds.HorrorSoundsRef.Config;
+    using System.Collections.Generic;
+    using Exiled.API.Features;
+    using Exiled.Events.EventArgs;
+    using Exiled.Loader;
+    using MEC;
 
-		public void OnRoundStartEvent()
-		{
-			Timing.RunCoroutine(RoundLoop(), "HorrorSoundLoop");
-		}
+    /// <summary>
+    /// Handles events derived from <see cref="Exiled.Events.Handlers"/>.
+    /// </summary>
+    public class EventHandlers
+    {
+        private readonly Plugin plugin;
+        private CoroutineHandle coroutineHandle;
 
-		public void OnEndingRoundEvent(EndingRoundEventArgs ev)
-		{
-			if (ev.IsRoundEnded)
-			{
-				Timing.KillCoroutines("HorrorSoundLoop");
-			}
-		}
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EventHandlers"/> class.
+        /// </summary>
+        /// <param name="plugin">An instance of the <see cref="Plugin"/> class.</param>
+        public EventHandlers(Plugin plugin) => this.plugin = plugin;
 
-		private IEnumerator<float> RoundLoop()
-		{
-			System.Random numGen = new System.Random();
-			int time;
-			List<String> voiceLines = new List<string> { "pitch_0.1 SCP pitch_0.1 6 pitch_0.1 8 pitch_0.1 2", "pitch_0.1 scpsubjects", "pitch_0.1 Camera", "pitch_0.1 Celsius", "pitch_0.1 .g7 h h", "pitch_0.1 ContainedSuccessfully", "pitch_0.1 Decontamination", "pitch_0.1 Intersection", "pitch_0.1 NineTailedFox", "pitch_0.1 Personnel h h a c s e", "pitch_0.1 HasEntered", "pitch_0.1 e s s", "pitch_0.1 c c h", "pitch_0.1 ChaosInsurgency" };
+        /// <inheritdoc cref="Exiled.Events.Handlers.Server.OnRoundEnded(RoundEndedEventArgs)"/>
+        public void OnRoundEnded(RoundEndedEventArgs ev)
+        {
+            if (coroutineHandle.IsRunning)
+                Timing.KillCoroutines(coroutineHandle);
+        }
 
-			while (true)
-			{
-				time = numGen.Next(Configs.minimumTime, Configs.maximumTime);
-				yield return Timing.WaitForSeconds(time);
-				Cassie.Message(voiceLines[numGen.Next(voiceLines.Count)], true, false);
-			}
-		}
-	}
+        /// <inheritdoc cref="Exiled.Events.Handlers.Server.OnRoundStarted"/>
+        public void OnRoundStarted()
+        {
+            coroutineHandle = Timing.RunCoroutine(RoundLoop());
+        }
+
+        /// <inheritdoc cref="Exiled.Events.Handlers.Server.OnWaitingForPlayers"/>
+        public void OnWaitingForPlayers()
+        {
+            if (coroutineHandle.IsRunning)
+                Timing.KillCoroutines(coroutineHandle);
+        }
+
+        private IEnumerator<float> RoundLoop()
+        {
+            while (true)
+            {
+                int time = Loader.Random.Next(plugin.Config.MinimumTime, plugin.Config.MaximumTime);
+                yield return Timing.WaitForSeconds(time);
+                Cassie.Message(plugin.Config.VoiceLines[Loader.Random.Next(plugin.Config.VoiceLines.Count)], true, false);
+            }
+        }
+    }
 }
